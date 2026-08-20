@@ -82,5 +82,8 @@ PY
     command = "echo 'On destroy, remove the AI Gateway Logpush job named '$JOBNAME' via API/dashboard (token not available in destroy provisioner).'"
   }
 
-  depends_on = [cloudflare_workers_script.notifier]
+  depends_on = [
+    cloudflare_workers_script.notifier,
+    cloudflare_workers_script_subdomain.notifier,
+  ]
 }

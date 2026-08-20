@@ -40,5 +40,8 @@ resource "cloudflare_logpush_job" "dlp" {
     ]
   }
 
-  depends_on = [cloudflare_workers_script.notifier]
+  depends_on = [
+    cloudflare_workers_script.notifier,
+    cloudflare_workers_script_subdomain.notifier,
+  ]
 }

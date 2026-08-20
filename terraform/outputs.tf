@@ -22,8 +22,10 @@ output "shared_secret" {
 output "next_steps" {
   description = "What to do after apply."
   value       = <<-EOT
-    1. Done — one apply deployed the Worker, its workers.dev route, and Logpush.
-       Worker URL: ${local.effective_worker_endpoint}
+    1. Worker + workers.dev route + Logpush deployed. Worker URL (auto-derived):
+       ${local.effective_worker_endpoint}
+       (If the Logpush job errored on a first apply, run `terraform apply` again —
+        the workers.dev route needs a few seconds to answer Logpush's validation.)
     2. Prereqs the Worker needs at RUNTIME (not created by this module):
          - A sender path: your own SMTP server (notify_mode=smtp) OR Cloudflare
            Email onboarded for the from_address domain (notify_mode=cf_email).

@@ -121,8 +121,8 @@ Notes:
 ## Deploy
 
 Terraform bundles the Worker (via `wrangler deploy --dry-run`), uploads it,
-enables its workers.dev route, auto-derives that URL, and creates the Logpush
-job(s) pointed at it — all in **one apply**.
+enables its workers.dev route, and auto-derives that URL for the Logpush
+job(s) — so **you never hand-copy the Worker URL**.
 
 ```bash
 cd terraform
@@ -130,11 +130,16 @@ cp terraform.tfvars.example terraform.tfvars
 # edit terraform.tfvars: token, account id, recipients, from_address, SMTP creds
 
 terraform init
-terraform apply            # deploys the Worker + Logpush in a single step
+terraform apply
 ```
 
-That's it. The module figures out the Worker URL itself — no copy-the-URL,
-no second apply.
+**It may take two `terraform apply` runs the first time.** The first apply
+creates the Worker and enables its `workers.dev` route; Cloudflare validates a
+Logpush destination by POSTing to it *at creation time*, and the freshly-enabled
+route can take a few seconds to answer. If the Logpush job errors on the first
+apply, just run `terraform apply` again — the route is live by then and the job
+creates cleanly. This is a propagation timing quirk, not a config step: the URL
+is still derived automatically, you never edit it.
 
 > **Custom domain instead of workers.dev?** Set `worker_endpoint` to your URL
 > (e.g. `https://dlp-notify.example.com`) and that overrides the auto-derived
