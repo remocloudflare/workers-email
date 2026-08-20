@@ -41,3 +41,10 @@ manage_logpush  = true
 worker_endpoint = ""   # e.g. "https://workers-email-dlp-notifier.<subdomain>.workers.dev"
 
 # shared_secret = ""   # leave empty to auto-generate a strong token
+
+# --- OPTIONAL: AI Gateway DLP notifications ---
+# Only if you use Cloudflare AI Gateway with DLP. Leave these OFF (default) if you
+# don't — the module works fully without AI Gateway. When on, a DLP block in AI
+# Gateway (HTTP 424) also emails you.
+# manage_ai_gateway_logpush = false
+# ai_gateway_name           = "my-ai-gateway"   # required only when the above is true
