@@ -32,13 +32,31 @@ variable "notification_recipients" {
   }
 }
 
+variable "notify_mode" {
+  description = <<-EOT
+    "log"  = deploy the Worker WITHOUT an email binding; on a DLP match it logs
+             and returns the digest as JSON. Use to verify Worker + Logpush + DLP
+             filtering with no email onboarding. (default)
+    "send" = attach the Cloudflare send_email binding and actually email the
+             notification_recipients. Requires email onboarding (see README).
+  EOT
+  type        = string
+  default     = "log"
+
+  validation {
+    condition     = contains(["log", "send"], var.notify_mode)
+    error_message = "notify_mode must be \"log\" or \"send\"."
+  }
+}
+
 variable "from_address" {
   description = <<-EOT
     Verified sender address for the notification email, e.g. dlp-alerts@yourdomain.com.
-    The domain MUST be onboarded to Cloudflare Email Sending first:
-      npx wrangler email sending enable yourdomain.com
+    Required only when notify_mode = "send". The domain MUST be onboarded to
+    Cloudflare Email first (see README).
   EOT
   type        = string
+  default     = ""
 }
 
 variable "from_name" {

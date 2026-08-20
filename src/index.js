@@ -55,6 +55,18 @@ export default {
       return new Response("ok: no DLP matches in batch", { status: 200 });
     }
 
+    const { subject, html, text } = buildDigest(hits, env);
+
+    // NOTIFY_MODE=log (or no EMAIL binding) → don't send; return the digest so
+    // Worker + Logpush + DLP filtering can be verified without email onboarding.
+    if ((env.NOTIFY_MODE || "").toLowerCase() === "log" || !env.EMAIL) {
+      console.log(`DLP notify [log mode]: ${hits.length} match(es)\n${text}`);
+      return new Response(
+        JSON.stringify({ mode: "log", matches: hits.length, subject, text }, null, 2),
+        { status: 200, headers: { "content-type": "application/json" } }
+      );
+    }
+
     const recipients = (env.RECIPIENTS || "")
       .split(",")
       .map((s) => s.trim())
@@ -63,8 +75,6 @@ export default {
     if (recipients.length === 0) {
       return new Response("no recipients configured (env.RECIPIENTS empty)", { status: 500 });
     }
-
-    const { subject, html, text } = buildDigest(hits, env);
 
     // Fan out: one message per recipient (send_email addresses one 'to' cleanly).
     const results = await Promise.allSettled(
