@@ -34,11 +34,11 @@ worker_name   = "workers-email-dlp-notifier"
 # smtp_pass = "REPLACE_WITH_SMTP_PASSWORD"
 # smtp_ehlo = "workers-email.dlp-notifier"
 
-# Logpush wiring.
-# On the FIRST apply, leave worker_endpoint = "" (Worker gets deployed, no Logpush yet).
-# Then copy the Worker's workers.dev URL from the dashboard, set it here, re-apply.
+# Logpush wiring. Single apply — the module auto-derives the Worker URL and
+# creates the Logpush job for you. Leave worker_endpoint blank unless you want to
+# force a custom domain (then set it to e.g. https://dlp-notify.example.com).
 manage_logpush  = true
-worker_endpoint = ""   # e.g. "https://workers-email-dlp-notifier.<subdomain>.workers.dev"
+# worker_endpoint = ""   # optional override; blank = auto-derive workers.dev URL
 
 # shared_secret = ""   # leave empty to auto-generate a strong token
 

@@ -11,8 +11,8 @@
 # random POST) is accepted by the Worker.
 
 locals {
-  logpush_ready = var.manage_logpush && var.worker_endpoint != ""
-  logpush_dest  = local.logpush_ready ? "${var.worker_endpoint}?token=${local.shared_secret}" : ""
+  logpush_ready = var.manage_logpush
+  logpush_dest  = local.logpush_ready ? "${local.effective_worker_endpoint}?token=${local.shared_secret}" : ""
 }
 
 resource "cloudflare_logpush_job" "dlp" {

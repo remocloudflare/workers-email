@@ -101,34 +101,25 @@ Account-scoped custom token with:
 
 ## Deploy
 
-Terraform bundles the Worker for you (via `wrangler deploy --dry-run`), uploads
-it, and creates the Logpush job. Two-step because Logpush needs the Worker's URL.
+Terraform bundles the Worker (via `wrangler deploy --dry-run`), uploads it,
+enables its workers.dev route, auto-derives that URL, and creates the Logpush
+job(s) pointed at it — all in **one apply**.
 
 ```bash
 cd terraform
 cp terraform.tfvars.example terraform.tfvars
-# edit terraform.tfvars: token, account id, recipients, from_address
-#   leave worker_endpoint = "" for now
+# edit terraform.tfvars: token, account id, recipients, from_address, SMTP creds
 
 terraform init
-terraform apply            # builds + deploys the Worker (no Logpush yet)
+terraform apply            # deploys the Worker + Logpush in a single step
 ```
 
-Grab the Worker's URL from **Dashboard → Workers & Pages →
-`workers-email-dlp-notifier`** (a `…workers.dev` URL), set it in
-`terraform.tfvars`:
+That's it. The module figures out the Worker URL itself — no copy-the-URL,
+no second apply.
 
-```hcl
-worker_endpoint = "https://workers-email-dlp-notifier.<your-subdomain>.workers.dev"
-```
-
-```bash
-terraform apply            # now creates the Logpush job pointed at the Worker
-```
-
-> Prefer a custom domain over `workers.dev`? Point one at the Worker and use that
-> URL as `worker_endpoint`. The shared secret (`?token=`) protects the endpoint
-> either way.
+> **Custom domain instead of workers.dev?** Set `worker_endpoint` to your URL
+> (e.g. `https://dlp-notify.example.com`) and that overrides the auto-derived
+> one. The shared secret (`?token=`) protects the endpoint either way.
 
 ## Change who gets notified
 

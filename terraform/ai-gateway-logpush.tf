@@ -17,8 +17,8 @@
 # ai_gateway resource.
 
 locals {
-  aig_logpush_ready = var.enable_ai_gateway && var.worker_endpoint != "" && var.ai_gateway_name != ""
-  aig_logpush_dest  = local.aig_logpush_ready ? "${var.worker_endpoint}?token=${local.shared_secret}" : ""
+  aig_logpush_ready = var.enable_ai_gateway && var.ai_gateway_name != ""
+  aig_logpush_dest  = local.aig_logpush_ready ? "${local.effective_worker_endpoint}?token=${local.shared_secret}" : ""
 }
 
 resource "null_resource" "ai_gateway_logpush" {

@@ -173,12 +173,10 @@ variable "ai_gateway_logpush_job_name" {
 
 variable "worker_endpoint" {
   description = <<-EOT
-    Public HTTPS URL of the deployed Worker that Logpush POSTs to, e.g.
-    https://workers-email-dlp-notifier.<your-subdomain>.workers.dev
-    or a custom domain. Required only when manage_logpush = true.
-    Find the workers.dev URL in the Worker's dashboard after the first apply,
-    or set a custom domain. Leave "" to skip Logpush creation on the first
-    apply, then set it and re-apply.
+    OPTIONAL override for the Worker URL that Logpush POSTs to. Leave "" (default)
+    and the module auto-derives the workers.dev URL and enables the route in the
+    SAME apply — no manual copy step. Set this only to force a specific URL, e.g.
+    a custom domain like https://dlp-notify.example.com.
   EOT
   type        = string
   default     = ""
