@@ -56,9 +56,10 @@ variable "notify_mode" {
 
 variable "from_address" {
   description = <<-EOT
-    Verified sender address for the notification email, e.g. dlp-alerts@yourdomain.com.
-    Required only when notify_mode = "send". The domain MUST be onboarded to
-    Cloudflare Email first (see README).
+    Sender address for the notification email, e.g. dlp-alerts@yourdomain.com.
+    Required when notify_mode = "cf_email" or "smtp". For cf_email the domain must
+    be onboarded to Cloudflare Email; for smtp use an address on the domain you
+    authenticate as (so it passes SPF/DKIM). See README.
   EOT
   type        = string
   default     = ""
