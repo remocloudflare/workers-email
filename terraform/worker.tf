@@ -1,12 +1,22 @@
 locals {
-  # In "log" mode we deploy the Worker WITHOUT the send_email binding, so it can
-  # be verified end-to-end (Worker + Logpush + DLP filtering) with no email
-  # onboarding. In "send" mode the EMAIL binding is attached.
-  email_binding = var.notify_mode == "send" ? [{
+  # The Cloudflare send_email binding is attached ONLY in cf_email mode.
+  email_binding = var.notify_mode == "cf_email" ? [{
     name                          = "EMAIL"
     type                          = "send_email"
     allowed_destination_addresses = var.notification_recipients
   }] : []
+
+  # SMTP config bindings are attached ONLY in smtp mode.
+  smtp_bindings = var.notify_mode == "smtp" ? concat(
+    [
+      { name = "SMTP_HOST", type = "plain_text", text = var.smtp_host },
+      { name = "SMTP_PORT", type = "plain_text", text = tostring(var.smtp_port) },
+      { name = "SMTP_TLS", type = "plain_text", text = var.smtp_tls },
+      { name = "SMTP_USER", type = "plain_text", text = var.smtp_user },
+      { name = "SMTP_EHLO", type = "plain_text", text = var.smtp_ehlo },
+    ],
+    var.smtp_pass != "" ? [{ name = "SMTP_PASS", type = "secret_text", text = var.smtp_pass }] : []
+  ) : []
 
   config_bindings = [
     { name = "NOTIFY_MODE", type = "plain_text", text = var.notify_mode },
@@ -28,7 +38,7 @@ resource "cloudflare_workers_script" "notifier" {
   compatibility_date  = var.compatibility_date
   compatibility_flags = ["nodejs_compat"]
 
-  bindings = concat(local.email_binding, local.config_bindings)
+  bindings = concat(local.email_binding, local.smtp_bindings, local.config_bindings)
 
   observability = { enabled = true }
 

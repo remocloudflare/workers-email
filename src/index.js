@@ -8,16 +8,26 @@
  * "allow", not just "block".
  *
  * All account-specific config arrives via bindings (see terraform/worker.tf):
- *   env.EMAIL          send_email binding (Cloudflare Email Sending)
- *   env.FROM_ADDRESS   verified sender, e.g. dlp-alerts@yourdomain.com
+ *   env.NOTIFY_MODE    transport: "log" | "cf_email" | "smtp"
+ *   env.EMAIL          send_email binding (only for cf_email transport)
+ *   env.FROM_ADDRESS   sender address, e.g. dlp-alerts@yourdomain.com
  *   env.FROM_NAME      display name for the sender
  *   env.RECIPIENTS     comma-separated list of notification recipients
  *   env.SHARED_SECRET  optional; if set, Logpush must present it (see below)
  *   env.ACCOUNT_NAME   optional label shown in the subject/body
+ *   -- SMTP transport (relay through the customer's own mail server) --
+ *   env.SMTP_HOST      submission host (587/465). NOTE: CF blocks port 25.
+ *   env.SMTP_PORT      587 (STARTTLS, default) | 465 (implicit TLS)
+ *   env.SMTP_TLS       "starttls" (default) | "tls" | "none"
+ *   env.SMTP_USER      auth username (optional; enables AUTH LOGIN)
+ *   env.SMTP_PASS      auth password (secret_text)
+ *   env.SMTP_EHLO      EHLO hostname (optional)
  *
  * The Worker source contains ZERO hardcoded account values, so the same file
  * redeploys on any account with only a new terraform.tfvars.
  */
+
+import { sendSmtp } from "./smtp.js";
 
 export default {
   async fetch(request, env, ctx) {
@@ -56,10 +66,11 @@ export default {
     }
 
     const { subject, html, text } = buildDigest(hits, env);
+    const mode = (env.NOTIFY_MODE || "log").toLowerCase();
 
-    // NOTIFY_MODE=log (or no EMAIL binding) → don't send; return the digest so
-    // Worker + Logpush + DLP filtering can be verified without email onboarding.
-    if ((env.NOTIFY_MODE || "").toLowerCase() === "log" || !env.EMAIL) {
+    // log mode → don't send; return the digest so Worker + Logpush + DLP
+    // filtering can be verified without any email onboarding.
+    if (mode === "log") {
       console.log(`DLP notify [log mode]: ${hits.length} match(es)\n${text}`);
       return new Response(
         JSON.stringify({ mode: "log", matches: hits.length, subject, text }, null, 2),
@@ -76,23 +87,45 @@ export default {
       return new Response("no recipients configured (env.RECIPIENTS empty)", { status: 500 });
     }
 
-    // Fan out: one message per recipient (send_email addresses one 'to' cleanly).
-    const results = await Promise.allSettled(
-      recipients.map((to) => sendOne(env, to, subject, html, text))
-    );
+    const from = env.FROM_ADDRESS;
+    const fromName = env.FROM_NAME || "";
 
-    const failed = results.filter((r) => r.status === "rejected");
-    if (failed.length) {
-      // Log for observability; still 200 so Logpush doesn't infinitely retry
-      // a partial success.
-      console.error("send failures:", failed.map((f) => String(f.reason)));
+    let ok = 0;
+    let failCount = 0;
+
+    if (mode === "smtp") {
+      // One SMTP session, all recipients in the envelope (efficient relay).
+      try {
+        await sendSmtp(env, { from, fromName, to: recipients, subject, html, text });
+        ok = recipients.length;
+      } catch (err) {
+        failCount = recipients.length;
+        console.error("SMTP send failed:", String(err));
+      }
+    } else if (mode === "cf_email") {
+      if (!env.EMAIL) {
+        return new Response("cf_email mode but no EMAIL binding attached", { status: 500 });
+      }
+      const results = await Promise.allSettled(
+        recipients.map((to) => sendCfEmail(env, to, subject, html, text))
+      );
+      failCount = results.filter((r) => r.status === "rejected").length;
+      ok = recipients.length - failCount;
+      if (failCount) {
+        console.error(
+          "cf_email failures:",
+          results.filter((r) => r.status === "rejected").map((f) => String(f.reason))
+        );
+      }
+    } else {
+      return new Response(`unknown NOTIFY_MODE: ${mode}`, { status: 500 });
     }
-    console.log(
-      `DLP notify: ${hits.length} match(es), ${recipients.length - failed.length}/${recipients.length} recipients ok`
-    );
 
+    console.log(`DLP notify [${mode}]: ${hits.length} match(es), ${ok}/${recipients.length} recipients ok`);
+
+    // Always 200 on partial success so Logpush doesn't retry the whole batch.
     return new Response(
-      `ok: ${hits.length} DLP match(es), notified ${recipients.length - failed.length}/${recipients.length}`,
+      `ok: ${hits.length} DLP match(es), ${mode} notified ${ok}/${recipients.length}`,
       { status: 200 }
     );
   },
@@ -193,7 +226,7 @@ function buildDigest(hits, env) {
   return { subject, html, text };
 }
 
-async function sendOne(env, to, subject, html, text) {
+async function sendCfEmail(env, to, subject, html, text) {
   // Cloudflare Email Sending binding — object API (see cloudflare-email-service).
   await env.EMAIL.send({
     to,

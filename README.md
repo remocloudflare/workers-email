@@ -136,6 +136,60 @@ curl -X POST "$URL?token=$SECRET" \
 You should get one email with a **🚫 Blocked (1)** and a **⚠️ Allowed (1)**
 section.
 
+## Sender options (notify_mode)
+
+The Worker supports three transports, chosen by `notify_mode`:
+
+| `notify_mode` | How mail leaves | Cloudflare email onboarding? | DNS changes? |
+|---|---|---|---|
+| `log` (default) | none — logs + returns the digest as JSON | no | no |
+| `cf_email` | Cloudflare `send_email` binding | **yes** (Email Routing/Sending) | yes (MX/TXT) |
+| `smtp` | relays through **your own mail server** | no | no |
+
+### SMTP transport (relay through the customer's own mail server)
+
+This is usually the enterprise-friendly option: the DLP alert goes out through
+the customer's existing mail relay — no Cloudflare email onboarding, no DNS
+changes on Cloudflare's side, and the mail originates from infrastructure their
+SOC already trusts.
+
+```hcl
+# terraform.tfvars
+notify_mode = "smtp"
+from_address = "dlp-alerts@customer.com"
+notification_recipients = ["soc@customer.com"]
+
+smtp_host = "smtp.customer.com"
+smtp_port = 587            # 587 STARTTLS  or  465 implicit TLS
+smtp_tls  = "starttls"     # "starttls" | "tls" | "none"
+smtp_user = "dlp-notifier@customer.com"
+smtp_pass = "REPLACE"      # stored as a Worker secret binding
+```
+
+**Hard limit — Cloudflare blocks outbound TCP port 25 from Workers.** The relay
+MUST be a submission port (587 STARTTLS or 465 implicit TLS) with auth. A plain
+port-25 MTA is not reachable from a Worker. This is a Cloudflare platform
+restriction, not a limitation of this code.
+
+The Worker speaks SMTP directly via the `cloudflare:sockets` API (`connect()` +
+`startTls()`), with `AUTH LOGIN`. No third-party mail service and no
+`nodemailer` (which does not run on the Workers runtime).
+
+**Gotcha — switching modes leaves the old secret behind.** Terraform's
+`cloudflare_workers_script` binding list does not purge a `secret_text` binding
+it no longer declares. If you deploy `smtp` (which sets `SMTP_PASS`) and later
+switch back to `log`/`cf_email`, the `SMTP_PASS` secret survives on the script.
+Remove it explicitly:
+
+```bash
+curl -X DELETE -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" \
+  "https://api.cloudflare.com/client/v4/accounts/$ACCT/workers/scripts/$WORKER/secrets/SMTP_PASS"
+```
+
+> Inbound SMTP ("server in") is **not** a Worker feature — a Worker cannot listen
+> on a TCP port. If you need to *receive* mail, that's Cloudflare Email Routing
+> → a Worker `email()` handler, a separate mechanism from this outbound notifier.
+
 ## Important limitation to set with the customer
 
 This alert reports **that** a DLP profile matched (user, host, profile, policy,

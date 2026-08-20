@@ -34,18 +34,23 @@ variable "notification_recipients" {
 
 variable "notify_mode" {
   description = <<-EOT
-    "log"  = deploy the Worker WITHOUT an email binding; on a DLP match it logs
-             and returns the digest as JSON. Use to verify Worker + Logpush + DLP
-             filtering with no email onboarding. (default)
-    "send" = attach the Cloudflare send_email binding and actually email the
-             notification_recipients. Requires email onboarding (see README).
+    "log"      = deploy the Worker WITHOUT any email transport; on a DLP match it
+                 logs and returns the digest as JSON. Verify Worker + Logpush +
+                 DLP filtering with zero email setup. (default)
+    "cf_email" = use the Cloudflare send_email binding (requires CF Email
+                 onboarding — see README).
+    "smtp"     = relay the notification through the customer's own SMTP server
+                 (submission port 587/465 with auth). No Cloudflare email
+                 onboarding, no DNS changes on Cloudflare's side. NOTE: Cloudflare
+                 blocks outbound port 25 from Workers, so the relay MUST be 587 or
+                 465, not a plain port-25 MTA.
   EOT
   type        = string
   default     = "log"
 
   validation {
-    condition     = contains(["log", "send"], var.notify_mode)
-    error_message = "notify_mode must be \"log\" or \"send\"."
+    condition     = contains(["log", "cf_email", "smtp"], var.notify_mode)
+    error_message = "notify_mode must be \"log\", \"cf_email\", or \"smtp\"."
   }
 }
 
@@ -69,6 +74,53 @@ variable "account_label" {
   description = "Optional short label shown in the email subject/body (e.g. customer or environment name)."
   type        = string
   default     = ""
+}
+
+# ---------------------------------------------------------------------------
+# SMTP transport (notify_mode = "smtp") — relay through the customer's own
+# mail server. No Cloudflare email onboarding, no DNS changes on CF's side.
+# Cloudflare blocks outbound port 25, so use submission port 587 or 465.
+# ---------------------------------------------------------------------------
+variable "smtp_host" {
+  description = "SMTP submission host (customer's mail server). Required when notify_mode = smtp."
+  type        = string
+  default     = ""
+}
+
+variable "smtp_port" {
+  description = "SMTP submission port: 587 (STARTTLS) or 465 (implicit TLS). Port 25 is blocked by Cloudflare."
+  type        = number
+  default     = 587
+}
+
+variable "smtp_tls" {
+  description = "TLS mode: \"starttls\" (port 587), \"tls\" (port 465), or \"none\" (testing only)."
+  type        = string
+  default     = "starttls"
+
+  validation {
+    condition     = contains(["starttls", "tls", "none"], var.smtp_tls)
+    error_message = "smtp_tls must be \"starttls\", \"tls\", or \"none\"."
+  }
+}
+
+variable "smtp_user" {
+  description = "SMTP auth username. Leave empty for an unauthenticated relay (rare)."
+  type        = string
+  default     = ""
+}
+
+variable "smtp_pass" {
+  description = "SMTP auth password (stored as a Worker secret binding)."
+  type        = string
+  default     = ""
+  sensitive   = true
+}
+
+variable "smtp_ehlo" {
+  description = "EHLO hostname the Worker presents to the SMTP server."
+  type        = string
+  default     = "workers-email.dlp-notifier"
 }
 
 # ---------------------------------------------------------------------------

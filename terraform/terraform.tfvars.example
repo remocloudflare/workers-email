@@ -10,14 +10,29 @@ notification_recipients = [
   "soc-oncall@yourdomain.com",
 ]
 
-# Verified sender. Domain MUST be onboarded to Cloudflare Email Sending first:
-#   npx wrangler email sending enable yourdomain.com
+# --- sender: choose notify_mode ---
+#   "log"      = no email; logs + returns digest as JSON (verify pipeline)
+#   "cf_email" = Cloudflare send_email binding (needs CF email onboarding + DNS)
+#   "smtp"     = relay through your own mail server (no CF onboarding, no DNS)
+notify_mode = "log"
+
+# Verified sender. For cf_email the domain must be onboarded to CF Email.
+# For smtp it's just the From: header / envelope sender.
 from_address = "dlp-alerts@yourdomain.com"
 
 # --- optional ---
 from_name     = "Cloudflare DLP Notifier"
 account_label = "Acme Prod"          # shown in subject/body; leave "" to omit
 worker_name   = "workers-email-dlp-notifier"
+
+# --- SMTP transport (only when notify_mode = "smtp") ---
+# Cloudflare blocks outbound port 25 — use 587 (STARTTLS) or 465 (implicit TLS).
+# smtp_host = "smtp.yourdomain.com"
+# smtp_port = 587
+# smtp_tls  = "starttls"   # "starttls" | "tls" | "none"
+# smtp_user = "dlp-notifier@yourdomain.com"
+# smtp_pass = "REPLACE_WITH_SMTP_PASSWORD"
+# smtp_ehlo = "workers-email.dlp-notifier"
 
 # Logpush wiring.
 # On the FIRST apply, leave worker_endpoint = "" (Worker gets deployed, no Logpush yet).
