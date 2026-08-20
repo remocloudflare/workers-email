@@ -1,0 +1,17 @@
+# Terraform
+terraform/terraform.tfvars
+terraform/*.tfstate
+terraform/*.tfstate.*
+terraform/.terraform/
+terraform/.terraform.tfstate.lock.info
+terraform/crash.log
+!terraform/.terraform.lock.hcl
+
+# Worker build artifacts
+.bundle/
+terraform/.bundle/
+node_modules/
+
+# Local env
+.dev.vars
+.wrangler/

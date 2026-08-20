@@ -1,0 +1,28 @@
+# Copy to terraform.tfvars and fill in. terraform.tfvars is gitignored.
+
+# --- required ---
+cloudflare_api_token  = "REPLACE_WITH_API_TOKEN"   # Workers Scripts:Edit, Logs:Edit, Account Settings:Read
+cloudflare_account_id = "REPLACE_WITH_ACCOUNT_ID"
+
+# WHO gets the DLP notification email. Edit and re-apply to change recipients.
+notification_recipients = [
+  "secops@yourdomain.com",
+  "soc-oncall@yourdomain.com",
+]
+
+# Verified sender. Domain MUST be onboarded to Cloudflare Email Sending first:
+#   npx wrangler email sending enable yourdomain.com
+from_address = "dlp-alerts@yourdomain.com"
+
+# --- optional ---
+from_name     = "Cloudflare DLP Notifier"
+account_label = "Acme Prod"          # shown in subject/body; leave "" to omit
+worker_name   = "workers-email-dlp-notifier"
+
+# Logpush wiring.
+# On the FIRST apply, leave worker_endpoint = "" (Worker gets deployed, no Logpush yet).
+# Then copy the Worker's workers.dev URL from the dashboard, set it here, re-apply.
+manage_logpush  = true
+worker_endpoint = ""   # e.g. "https://workers-email-dlp-notifier.<subdomain>.workers.dev"
+
+# shared_secret = ""   # leave empty to auto-generate a strong token

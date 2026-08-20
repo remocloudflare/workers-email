@@ -1,0 +1,14 @@
+{
+  "name": "workers-email-dlp-notifier",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Cloudflare Worker that emails a digest when a DLP profile matches (blocked AND allowed) via Logpush",
+  "scripts": {
+    "build": "wrangler deploy --dry-run --outdir .bundle",
+    "deploy": "wrangler deploy",
+    "dev": "wrangler dev"
+  },
+  "devDependencies": {
+    "wrangler": "^3.90.0"
+  }
+}
