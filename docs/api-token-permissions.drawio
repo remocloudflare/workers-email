@@ -1,0 +1,76 @@
+<mxfile host="app.diagrams.net">
+  <diagram id="token-perms" name="API Token Permissions">
+    <mxGraphModel dx="1400" dy="900" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1500" pageHeight="760" math="0" shadow="0" background="#0B1220">
+      <root>
+        <mxCell id="0"/>
+        <mxCell id="1" parent="0"/>
+
+        <!-- Title -->
+        <mxCell id="title" value="workers-email — API Token Permissions" style="text;html=1;align=left;verticalAlign=middle;fontColor=#FB923C;fontSize=20;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="60" y="30" width="900" height="30" as="geometry"/>
+        </mxCell>
+        <mxCell id="subtitle" value="Account-scoped Custom Token (dash.cloudflare.com → My Profile → API Tokens → Create Token → Custom Token)" style="text;html=1;align=left;verticalAlign=middle;fontColor=#94A3B8;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="60" y="60" width="1100" height="20" as="geometry"/>
+        </mxCell>
+
+        <!-- Central token node -->
+        <mxCell id="token" value="🔑&#10;API Token&#10;(Account-scoped)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#064E3B;strokeColor=#34D399;fontColor=#ECFDF5;fontSize=14;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="120" y="330" width="180" height="120" as="geometry"/>
+        </mxCell>
+
+        <!-- ===== REQUIRED group ===== -->
+        <mxCell id="reqbox" value="ALWAYS REQUIRED" style="rounded=1;dashed=1;dashPattern=8 4;fillColor=none;strokeColor=#34D399;fontColor=#34D399;fontSize=13;fontStyle=1;verticalAlign=top;align=left;spacingLeft=14;spacingTop=8;" vertex="1" parent="1">
+          <mxGeometry x="420" y="110" width="440" height="470" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="r1" value="Workers Scripts · Edit&#10;&#10;Deploy the Worker, enable its&#10;workers.dev route, read the&#10;account subdomain" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#0f2f27;strokeColor=#34D399;fontColor=#ECFDF5;fontSize=12;align=left;spacingLeft=12;verticalAlign=top;spacingTop=10;" vertex="1" parent="1">
+          <mxGeometry x="450" y="150" width="380" height="110" as="geometry"/>
+        </mxCell>
+        <mxCell id="r2" value="Logs · Edit&#10;&#10;Create the Logpush job(s)&#10;(gateway_http + ai_gateway_events)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#0f2f27;strokeColor=#34D399;fontColor=#ECFDF5;fontSize=12;align=left;spacingLeft=12;verticalAlign=top;spacingTop=10;" vertex="1" parent="1">
+          <mxGeometry x="450" y="285" width="380" height="95" as="geometry"/>
+        </mxCell>
+        <mxCell id="r3" value="Account Settings · Read&#10;&#10;wrangler whoami / account lookups&#10;during the build step" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#0f2f27;strokeColor=#34D399;fontColor=#ECFDF5;fontSize=12;align=left;spacingLeft=12;verticalAlign=top;spacingTop=10;" vertex="1" parent="1">
+          <mxGeometry x="450" y="405" width="380" height="95" as="geometry"/>
+        </mxCell>
+
+        <!-- ===== OPTIONAL group ===== -->
+        <mxCell id="optbox" value="OPTIONAL — only if enable_ai_gateway = true" style="rounded=1;dashed=1;dashPattern=8 4;fillColor=none;strokeColor=#FBBF24;fontColor=#FBBF24;fontSize=13;fontStyle=1;verticalAlign=top;align=left;spacingLeft=14;spacingTop=8;" vertex="1" parent="1">
+          <mxGeometry x="960" y="230" width="470" height="240" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="o1" value="AI Gateway · Edit&#10;&#10;Enable Logpush on the AI Gateway&#10;and create the ai_gateway_events&#10;Logpush job" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#3A2A0A;strokeColor=#FBBF24;fontColor=#FDE68A;fontSize=12;align=left;spacingLeft=12;verticalAlign=top;spacingTop=10;" vertex="1" parent="1">
+          <mxGeometry x="990" y="275" width="400" height="110" as="geometry"/>
+        </mxCell>
+        <mxCell id="onote" value="⚠ Separate permission — NOT bundled with Workers/Logs.&#10;Without it, AI Gateway calls return 403. ~60s to propagate." style="rounded=1;whiteSpace=wrap;html=1;fillColor=#3A1220;strokeColor=#FB7185;fontColor=#FECDD3;fontSize=11;align=left;spacingLeft=12;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="990" y="395" width="400" height="55" as="geometry"/>
+        </mxCell>
+
+        <!-- edges token -> required -->
+        <mxCell id="e1" style="endArrow=classic;html=1;strokeColor=#34D399;" edge="1" parent="1" source="token" target="r1">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="e2" style="endArrow=classic;html=1;strokeColor=#34D399;" edge="1" parent="1" source="token" target="r2">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="e3" style="endArrow=classic;html=1;strokeColor=#34D399;" edge="1" parent="1" source="token" target="r3">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <!-- edge token -> optional (dashed amber), routed BELOW the green group, entering AI Gateway card from the RIGHT to avoid the warning card -->
+        <mxCell id="e4" style="endArrow=classic;html=1;strokeColor=#FBBF24;dashed=1;dashPattern=6 4;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=1;entryY=0.5;entryDx=0;entryDy=0;" edge="1" parent="1" source="token" target="o1">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="210" y="625"/>
+              <mxPoint x="1450" y="625"/>
+              <mxPoint x="1450" y="330"/>
+            </Array>
+          </mxGeometry>
+        </mxCell>
+
+        <!-- footnote -->
+        <mxCell id="foot" value="No ZONE permissions needed unless you point a custom domain at the Worker yourself. The same token is read from terraform.tfvars and reused by the build + subdomain lookup (no wrangler login)." style="text;html=1;align=left;verticalAlign=middle;fontColor=#94A3B8;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="120" y="675" width="1300" height="40" as="geometry"/>
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

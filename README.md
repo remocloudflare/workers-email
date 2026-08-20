@@ -94,6 +94,10 @@ config the notification depends on:
 
 ### API token scopes
 
+![API token permissions](docs/screenshots/api-token-permissions.png)
+
+*(Editable source: [`docs/api-token-permissions.drawio`](docs/api-token-permissions.drawio))*
+
 Create an **Account-scoped API token** (My Profile → API Tokens → Create Token →
 Custom Token) with these permissions:
 
