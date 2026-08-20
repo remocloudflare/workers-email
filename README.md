@@ -35,6 +35,29 @@ Gateway HTTP traffic ─(DLP profile matches)─> Logpush (gateway_http dataset)
   arrives as bindings. A colleague clones the repo, fills in their own
   `terraform.tfvars`, and applies.
 
+## What the notification emails look like
+
+Gateway HTTP DLP — one digest, blocked **and** allowed matches split into sections:
+
+![DLP notification email](docs/screenshots/03-received-email.png)
+
+Optional AI Gateway DLP — blocked prompts (HTTP 424) from a Cloudflare AI Gateway:
+
+![AI Gateway DLP email](docs/screenshots/04-ai-gateway-email.png)
+
+## See it working
+
+Deploy with Terraform:
+
+![terraform apply](docs/screenshots/01-terraform-apply.png)
+
+Send a test event and get `smtp notified`:
+
+![curl test](docs/screenshots/02-curl-response.png)
+
+> Full step-by-step (both zsh/bash and nushell) is in
+> [`docs/testing.md`](docs/testing.md).
+
 ## Repo layout
 
 ```
