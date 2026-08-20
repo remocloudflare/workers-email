@@ -53,19 +53,44 @@ export default {
       return new Response(`could not parse batch: ${err.message}`, { status: 400 });
     }
 
-    // Keep only rows where a DLP profile matched. This is action-agnostic on
-    // purpose: it captures block AND allow, so "allowed but DLP triggered"
-    // events are reported too.
-    const hits = rows.filter((r) => {
-      const profiles = r.DLPProfiles ?? r.dlp_profiles ?? [];
-      return Array.isArray(profiles) && profiles.length > 0;
-    });
+    // Detect the log source and keep only DLP-relevant rows.
+    //  - Gateway HTTP dataset: row has DLPProfiles[] (non-empty = a DLP match).
+    //  - AI Gateway (ai_gateway_events) dataset: a DLP block surfaces as
+    //    StatusCode 424 (the prompt was blocked by an AI Gateway DLP policy).
+    //    Note: the Logpush dataset has NO dlp_action/profile field in plaintext —
+    //    those live in the ENCRYPTED Metadata. So here we alert on the 424 signal;
+    //    profile-level detail requires decrypting Metadata (future enhancement).
+    const isAiGateway = rows.some((r) => "Gateway" in r || "StatusCode" in r);
+
+    let hits;
+    if (isAiGateway) {
+      hits = rows
+        .filter((r) => Number(r.StatusCode) === 424)
+        .map((r) => ({
+          source: "ai_gateway",
+          when: r.Datetime ?? r.EdgeStartTimestamp ?? "",
+          gateway: r.Gateway ?? "",
+          model: r.Model ?? "",
+          provider: r.Provider ?? "",
+          endpoint: r.Endpoint ?? "",
+          status: r.StatusCode,
+        }));
+    } else {
+      hits = rows
+        .filter((r) => {
+          const p = r.DLPProfiles ?? r.dlp_profiles ?? [];
+          return Array.isArray(p) && p.length > 0;
+        })
+        .map((r) => ({ source: "gateway_http", ...r }));
+    }
 
     if (hits.length === 0) {
       return new Response("ok: no DLP matches in batch", { status: 200 });
     }
 
-    const { subject, html, text } = buildDigest(hits, env);
+    const { subject, html, text } = isAiGateway
+      ? buildAiGatewayDigest(hits, env)
+      : buildDigest(hits, env);
     const mode = (env.NOTIFY_MODE || "log").toLowerCase();
 
     // log mode → don't send; return the digest so Worker + Logpush + DLP
@@ -222,6 +247,54 @@ function buildDigest(hits, env) {
     `${hits.length} DLP profile match(es) in Gateway HTTP traffic.\n\n` +
     `${bSec.text}\n${aSec.text}\n` +
     `Note: reports THAT a DLP profile matched. For the matched content, use DLP Payload Logging.\n`;
+
+  return { subject, html, text };
+}
+
+function buildAiGatewayDigest(hits, env) {
+  const label = env.ACCOUNT_NAME ? ` [${env.ACCOUNT_NAME}]` : "";
+  const subject = `AI Gateway DLP${label}: ${hits.length} prompt(s) blocked`;
+
+  const rowsHtml = hits
+    .map(
+      (h) => `<tr>
+        <td style="padding:4px 8px;border-bottom:1px solid #333;">${esc(h.when)}</td>
+        <td style="padding:4px 8px;border-bottom:1px solid #333;">${esc(h.gateway)}</td>
+        <td style="padding:4px 8px;border-bottom:1px solid #333;">${esc(h.provider)}</td>
+        <td style="padding:4px 8px;border-bottom:1px solid #333;">${esc(h.model)}</td>
+        <td style="padding:4px 8px;border-bottom:1px solid #333;">${esc(h.status)}</td>
+      </tr>`
+    )
+    .join("");
+
+  const html = `<div style="font-family:system-ui,sans-serif;color:#e5e5e5;background:#1a1a1a;padding:16px;">
+    <h2 style="color:#f6821f;margin:0 0 8px;">AI Gateway DLP block${label}</h2>
+    <p style="margin:0 0 12px;color:#aaa;">${hits.length} prompt(s) blocked by an AI Gateway DLP policy (HTTP 424).</p>
+    <h3 style="margin:16px 0 4px;">🚫 Blocked prompts (${hits.length})</h3>
+    <table style="border-collapse:collapse;font:13px monospace;width:100%;">
+      <tr style="text-align:left;color:#f6821f;">
+        <th style="padding:4px 8px;">Time</th><th style="padding:4px 8px;">Gateway</th>
+        <th style="padding:4px 8px;">Provider</th><th style="padding:4px 8px;">Model</th>
+        <th style="padding:4px 8px;">Status</th>
+      </tr>${rowsHtml}
+    </table>
+    <p style="margin-top:16px;font-size:12px;color:#888;">
+      Note: this reports that AI Gateway DLP blocked a prompt (HTTP 424). The
+      matched DLP profile and prompt content live in the encrypted log Metadata —
+      decrypt with your Logpush private key to view them.
+    </p>
+  </div>`;
+
+  const text =
+    `AI Gateway DLP block${label}\n` +
+    `${hits.length} prompt(s) blocked by an AI Gateway DLP policy (HTTP 424).\n\n` +
+    hits
+      .map(
+        (h) =>
+          `  ${h.when} | gateway=${h.gateway} | ${h.provider}/${h.model} | status=${h.status}`
+      )
+      .join("\n") +
+    `\n\nNote: matched profile + prompt content are in the encrypted log Metadata (decrypt with your Logpush private key).\n`;
 
   return { subject, html, text };
 }

@@ -7,6 +7,13 @@ The notifier reports **both blocked and allowed** DLP matches — so you also ge
 alerted when a DLP profile fires on a policy whose action is *allow* (monitor
 mode), not only on blocks.
 
+## Architecture
+
+![architecture](screenshots/architecture.png)
+
+*(Editable source: [`architecture.drawio`](architecture.drawio) — open in
+[diagrams.net](https://app.diagrams.net) or the desktop app.)*
+
 ---
 
 ## Prerequisites

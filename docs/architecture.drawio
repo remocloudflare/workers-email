@@ -1,0 +1,99 @@
+<mxfile host="app.diagrams.net">
+  <diagram id="dlp-notifier" name="DLP Email Notifier">
+    <mxGraphModel dx="1600" dy="1000" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1600" pageHeight="900" math="0" shadow="0" background="#0B1220">
+      <root>
+        <mxCell id="0"/>
+        <mxCell id="1" parent="0"/>
+
+        <!-- Title -->
+        <mxCell id="title" value="Cloudflare DLP Email Notifier — Architecture" style="text;html=1;align=left;verticalAlign=middle;fontColor=#FB923C;fontSize=20;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="60" y="30" width="900" height="30" as="geometry"/>
+        </mxCell>
+        <mxCell id="subtitle" value="Gateway DLP events → Logpush → Worker (filter + digest) → email. Reports BLOCKED and ALLOWED matches." style="text;html=1;align=left;verticalAlign=middle;fontColor=#94A3B8;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="60" y="60" width="1000" height="20" as="geometry"/>
+        </mxCell>
+
+        <!-- ===== Cloudflare boundary ===== -->
+        <mxCell id="cfboundary" value="CLOUDFLARE" style="rounded=1;dashed=1;dashPattern=8 4;fillColor=none;strokeColor=#FBBF24;fontColor=#FBBF24;fontSize=12;fontStyle=1;verticalAlign=top;align=left;spacingLeft=12;spacingTop=8;" vertex="1" parent="1">
+          <mxGeometry x="60" y="120" width="1080" height="420" as="geometry"/>
+        </mxCell>
+
+        <!-- Source: Gateway HTTP + DLP -->
+        <mxCell id="gw" value="Secure Web Gateway (HTTP)&#10;+ TLS inspection&#10;+ DLP profile on a policy" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#4C1D95;strokeColor=#A78BFA;fontColor=#F5F3FF;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="100" y="230" width="200" height="110" as="geometry"/>
+        </mxCell>
+
+        <!-- Logpush -->
+        <mxCell id="logpush" value="Logpush job&#10;dataset: gateway_http&#10;(ships DLPProfiles, user, host,&#10;action, policy)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#064E3B;strokeColor=#34D399;fontColor=#ECFDF5;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="360" y="230" width="210" height="110" as="geometry"/>
+        </mxCell>
+
+        <!-- Worker -->
+        <mxCell id="worker" value="Cloudflare Worker" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#064E3B;strokeColor=#34D399;fontColor=#ECFDF5;fontSize=12;fontStyle=1;verticalAlign=top;spacingTop=8;" vertex="1" parent="1">
+          <mxGeometry x="630" y="170" width="240" height="230" as="geometry"/>
+        </mxCell>
+        <mxCell id="wstep1" value="1 · keep rows where a DLP&#10;profile matched (block AND allow)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#1E293B;strokeColor=#94A3B8;fontColor=#E2E8F0;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="648" y="215" width="204" height="46" as="geometry"/>
+        </mxCell>
+        <mxCell id="wstep2" value="2 · build digest — split into&#10;🚫 Blocked / ⚠️ Allowed" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#1E293B;strokeColor=#94A3B8;fontColor=#E2E8F0;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="648" y="271" width="204" height="46" as="geometry"/>
+        </mxCell>
+        <mxCell id="wstep3" value="3 · shared-secret gate (?token=)&#10;send via chosen transport" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#1E293B;strokeColor=#94A3B8;fontColor=#E2E8F0;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="648" y="327" width="204" height="46" as="geometry"/>
+        </mxCell>
+
+        <!-- Transport A: SMTP -->
+        <mxCell id="smtp" value="Transport A — SMTP&#10;relay via customer mail server&#10;587 STARTTLS / 465 TLS + AUTH&#10;(port 25 blocked by CF)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#4A2A0A;strokeColor=#FB923C;fontColor=#FED7AA;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="930" y="175" width="180" height="100" as="geometry"/>
+        </mxCell>
+
+        <!-- Transport B: CF Email -->
+        <mxCell id="cfemail" value="Transport B — Cloudflare Email&#10;send_email binding&#10;(needs CF Email onboarding + DNS)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#4A2A0A;strokeColor=#FB923C;fontColor=#FED7AA;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="930" y="300" width="180" height="90" as="geometry"/>
+        </mxCell>
+
+        <!-- Recipients (outside CF boundary) -->
+        <mxCell id="recipients" value="Notification recipients&#10;(configurable list)&#10;SOC / DPO / on-call inbox" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#083344;strokeColor=#22D3EE;fontColor=#CFFAFE;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="1240" y="230" width="200" height="110" as="geometry"/>
+        </mxCell>
+
+        <!-- ===== Terraform band ===== -->
+        <mxCell id="tfband" value="Terraform-managed  (cloudflare/cloudflare v5)" style="rounded=1;dashed=1;dashPattern=6 4;fillColor=none;strokeColor=#94A3B8;fontColor=#94A3B8;fontSize=11;fontStyle=1;verticalAlign=top;align=left;spacingLeft=12;spacingTop=6;" vertex="1" parent="1">
+          <mxGeometry x="60" y="600" width="1080" height="120" as="geometry"/>
+        </mxCell>
+        <mxCell id="tf1" value="cloudflare_workers_script&#10;(Worker + bindings + secrets)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#1E293B;strokeColor=#94A3B8;fontColor=#E2E8F0;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="90" y="640" width="220" height="56" as="geometry"/>
+        </mxCell>
+        <mxCell id="tf2" value="cloudflare_logpush_job&#10;(gateway_http → Worker URL)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#1E293B;strokeColor=#94A3B8;fontColor=#E2E8F0;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="340" y="640" width="220" height="56" as="geometry"/>
+        </mxCell>
+        <mxCell id="tf3" value="notify_mode = log | cf_email | smtp&#10;recipients + SMTP config in tfvars" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#1E293B;strokeColor=#94A3B8;fontColor=#E2E8F0;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="590" y="640" width="240" height="56" as="geometry"/>
+        </mxCell>
+        <mxCell id="tf4" value="content = matched profile&#10;NOT the sensitive value.&#10;Use DLP Payload Logging for content." style="rounded=1;whiteSpace=wrap;html=1;fillColor=#3A1220;strokeColor=#FB7185;fontColor=#FECDD3;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="860" y="640" width="250" height="56" as="geometry"/>
+        </mxCell>
+
+        <!-- ===== Edges ===== -->
+        <mxCell id="e1" value="DLP match&#10;logged" style="endArrow=classic;html=1;strokeColor=#A78BFA;fontColor=#A78BFA;fontSize=10;labelBackgroundColor=#0B1220;" edge="1" parent="1" source="gw" target="logpush">
+          <mxGeometry relative="1" as="geometry"><mxPoint x="0" y="-18" as="offset"/></mxGeometry>
+        </mxCell>
+        <mxCell id="e2" value="POST NDJSON&#10;(gzip)" style="endArrow=classic;html=1;strokeColor=#34D399;fontColor=#34D399;fontSize=10;labelBackgroundColor=#0B1220;" edge="1" parent="1" source="logpush" target="worker">
+          <mxGeometry relative="1" as="geometry"><mxPoint x="0" y="-18" as="offset"/></mxGeometry>
+        </mxCell>
+        <mxCell id="e3" value="" style="endArrow=classic;html=1;strokeColor=#FB923C;" edge="1" parent="1" source="worker" target="smtp">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="e4" value="" style="endArrow=classic;html=1;strokeColor=#FB923C;" edge="1" parent="1" source="worker" target="cfemail">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="e5" value="email digest" style="endArrow=classic;html=1;strokeColor=#FB923C;fontColor=#FED7AA;fontSize=10;labelBackgroundColor=#0B1220;" edge="1" parent="1" source="smtp" target="recipients">
+          <mxGeometry x="-0.4" relative="1" as="geometry"><mxPoint x="0" y="-16" as="offset"/></mxGeometry>
+        </mxCell>
+        <mxCell id="e6" value="email digest" style="endArrow=classic;html=1;strokeColor=#FB923C;fontColor=#FED7AA;fontSize=10;labelBackgroundColor=#0B1220;" edge="1" parent="1" source="cfemail" target="recipients">
+          <mxGeometry x="-0.4" relative="1" as="geometry"><mxPoint x="0" y="16" as="offset"/></mxGeometry>
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

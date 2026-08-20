@@ -10,6 +10,10 @@ email** and lets you pick exactly who gets notified.
 
 ## What it does
 
+![architecture](docs/screenshots/architecture.png)
+
+*(Editable source: [`docs/architecture.drawio`](docs/architecture.drawio))*
+
 ```
 Gateway HTTP traffic ─(DLP profile matches)─> Logpush (gateway_http dataset)
         │
