@@ -94,10 +94,29 @@ config the notification depends on:
 
 ### API token scopes
 
-Account-scoped custom token with:
-- **Workers Scripts: Edit**
-- **Logs: Edit** (for the Logpush job)
-- **Account Settings: Read** (`wrangler whoami`)
+Create an **Account-scoped API token** (My Profile → API Tokens → Create Token →
+Custom Token) with these permissions:
+
+**Always required:**
+| Permission | Level | Why |
+|---|---|---|
+| **Workers Scripts: Edit** | Account | Deploy the Worker + enable its workers.dev route + read the account subdomain |
+| **Logs: Edit** | Account | Create the Logpush job(s) |
+| **Account Settings: Read** | Account | `wrangler whoami` / account lookups during build |
+
+**Only if `enable_ai_gateway = true`:**
+| Permission | Level | Why |
+|---|---|---|
+| **AI Gateway: Edit** | Account | Enable Logpush on the AI Gateway and create the `ai_gateway_events` Logpush job |
+
+Notes:
+- **AI Gateway is a SEPARATE permission** — it is *not* bundled with Workers/Logs
+  scopes. A token without it returns `403` on the AI Gateway calls. Scope changes
+  take ~60s to propagate.
+- No **zone** permissions are needed unless you point a custom domain at the
+  Worker yourself (that's outside this module).
+- The same token is read from `terraform.tfvars` and reused by the build step and
+  the subdomain lookup — it never needs `wrangler login`.
 
 ## Deploy
 

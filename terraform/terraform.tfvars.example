@@ -1,7 +1,7 @@
 # Copy to terraform.tfvars and fill in. terraform.tfvars is gitignored.
 
 # --- required ---
-cloudflare_api_token  = "REPLACE_WITH_API_TOKEN"   # Workers Scripts:Edit, Logs:Edit, Account Settings:Read
+cloudflare_api_token  = "REPLACE_WITH_API_TOKEN"   # Workers Scripts:Edit, Logs:Edit, Account Settings:Read (+ AI Gateway:Edit if enable_ai_gateway=true). See README.
 cloudflare_account_id = "REPLACE_WITH_ACCOUNT_ID"
 
 # WHO gets the DLP notification email. Edit and re-apply to change recipients.
