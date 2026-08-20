@@ -144,19 +144,23 @@ variable "logpush_job_name" {
 }
 
 # --- AI Gateway Logpush (dataset: ai_gateway_events) ---
-variable "manage_ai_gateway_logpush" {
+variable "enable_ai_gateway" {
   description = <<-EOT
-    When true, Terraform creates a Logpush job for the AI Gateway (ai_gateway_events
-    dataset) that feeds this Worker. A DLP block in AI Gateway appears as
-    StatusCode 424. Requires the gateway to have collect_logs + logpush + a
-    logpush_public_key configured out-of-band (see README). Default false.
+    Master switch for the AI Gateway DLP path.
+    true  = also create a Logpush job for the AI Gateway (ai_gateway_events
+            dataset) that feeds this Worker. A DLP block in AI Gateway appears as
+            StatusCode 424. Requires the gateway to have collect_logs + logpush +
+            a logpush_public_key configured out-of-band (see README), and
+            ai_gateway_name must be set.
+    false = skip the AI Gateway path entirely (default). The Worker + Gateway HTTP
+            DLP path still deploy and work normally.
   EOT
   type        = bool
   default     = false
 }
 
 variable "ai_gateway_name" {
-  description = "Name/id of the AI Gateway to watch (used for labeling; the Logpush dataset is account-wide)."
+  description = "Name/id of the AI Gateway to watch. Required when enable_ai_gateway = true."
   type        = string
   default     = ""
 }

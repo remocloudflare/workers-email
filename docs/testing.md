@@ -150,6 +150,26 @@ message like:
 
 ---
 
+## Optional: AI Gateway DLP notifications
+
+If you use **Cloudflare AI Gateway** with DLP, the notifier can also alert you
+when a prompt is blocked there. Set `enable_ai_gateway = true` (and
+`ai_gateway_name`) in `terraform.tfvars`, and make sure the gateway has
+`collect_logs`, `logpush`, and a Logpush public key configured. A DLP block in
+AI Gateway surfaces as **HTTP 424**, and you'll receive an email like this:
+
+![ai-gateway-email](screenshots/04-ai-gateway-email.png)
+
+> This path is **off by default** — customers without AI Gateway can ignore it
+> entirely; the Gateway HTTP DLP notifier above works on its own.
+>
+> Note: the AI Gateway alert reports *that* a prompt was blocked (gateway,
+> provider, model, HTTP 424). The matched DLP profile and prompt content live in
+> the **encrypted** Logpush Metadata — decrypt with your Logpush private key to
+> view them.
+
+---
+
 ## Troubleshooting
 
 | Symptom | Likely cause | Fix |

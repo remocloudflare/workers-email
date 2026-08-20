@@ -17,7 +17,7 @@
 # ai_gateway resource.
 
 locals {
-  aig_logpush_ready = var.manage_ai_gateway_logpush && var.worker_endpoint != "" && var.ai_gateway_name != ""
+  aig_logpush_ready = var.enable_ai_gateway && var.worker_endpoint != "" && var.ai_gateway_name != ""
   aig_logpush_dest  = local.aig_logpush_ready ? "${var.worker_endpoint}?token=${local.shared_secret}" : ""
 }
 
@@ -71,8 +71,8 @@ PY
 
   # Best-effort delete on destroy.
   provisioner "local-exec" {
-    when       = destroy
-    on_failure = continue
+    when        = destroy
+    on_failure  = continue
     interpreter = ["/bin/bash", "-c"]
     environment = {
       CF_TOKEN = self.triggers.account # placeholder; token not available on destroy
