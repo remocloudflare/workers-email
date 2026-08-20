@@ -232,6 +232,25 @@ curl -X DELETE -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" \
 > on a TCP port. If you need to *receive* mail, that's Cloudflare Email Routing
 > → a Worker `email()` handler, a separate mechanism from this outbound notifier.
 
+## Reproducing the AI Gateway DLP config
+
+The Terraform module creates the *Logpush* wiring, but the AI Gateway's **DLP
+policy itself** (which profiles it blocks) is **not** manageable by the
+cloudflare v5 provider — it's dashboard/REST-API only. Use the helper script to
+make it reproducible:
+
+```bash
+export CLOUDFLARE_API_TOKEN=...   # AI Gateway:Edit + DLP:Edit
+scripts/configure-ai-gateway-dlp.sh <account_id> <gateway_name>
+```
+
+It snapshots the gateway first, enables detection entries on the chosen
+predefined profiles (a profile with no enabled entries detects nothing), and
+merge-safely sets the gateway's DLP policy (BLOCK / REQUEST) without wiping
+logpush or other settings. Edit `PROFILE_IDS` in the script for your coverage.
+Wait ~20-30s after running before testing — profile changes take time to
+propagate.
+
 ## Important limitation to set with the customer
 
 This alert reports **that** a DLP profile matched (user, host, profile, policy,

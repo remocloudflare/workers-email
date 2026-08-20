@@ -16,3 +16,4 @@ node_modules/
 .dev.vars
 .wrangler/
 .keys/
+*.snapshot.json
