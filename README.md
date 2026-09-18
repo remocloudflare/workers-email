@@ -46,6 +46,20 @@ and inspect the traffic that should generate notifications.
 
 ![Gateway HTTP policy: BLOCK PROMPT](docs/screenshots/dlp-block-prompt-policy.png)
 
+## Worker deployment evidence
+
+These dashboard captures show the deployed Worker, its runtime configuration,
+notification recipients, SMTP transport, deployment history, and workers.dev
+route. Personal email addresses and SMTP host/user values are redacted.
+
+![Worker overview](docs/screenshots/worker-overview.png)
+
+![Worker settings: SMTP and notification recipients](docs/screenshots/worker-settings-smtp-recipients.png)
+
+![Worker metrics and deployments](docs/screenshots/worker-metrics-deployments.png)
+
+![Worker domains](docs/screenshots/worker-domains.png)
+
 ## What the notification emails look like
 
 Gateway HTTP DLP — one digest, blocked **and** allowed matches split into sections:
