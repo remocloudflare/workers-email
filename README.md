@@ -29,11 +29,22 @@ Gateway HTTP traffic ─(DLP profile matches)─> Logpush (gateway_http dataset)
   you. The digest separates blocked vs allowed sections.
 - **Pick your recipients.** `notification_recipients` is a Terraform list. Edit
   it, `terraform apply`, done.
-- **No third-party email service, no SMTP.** Uses the Cloudflare Email Sending
-  `send_email` binding.
+- **Multiple notification transports.** Use customer SMTP, Cloudflare Email
+  Sending, or log-only mode for testing; no third-party email service is
+  required.
 - **Portable.** The Worker source has zero hardcoded account values — everything
   arrives as bindings. A colleague clones the repo, fills in their own
   `terraform.tfvars`, and applies.
+
+## DLP setup in Cloudflare One
+
+The DLP profile and Gateway HTTP policy are account-level prerequisites configured
+outside this Terraform module. The policy must reference at least one DLP profile
+and inspect the traffic that should generate notifications.
+
+![DLP profile: AI Prompt Financial Information](docs/screenshots/dlp-ai-prompt-financial-information-profile.png)
+
+![Gateway HTTP policy: BLOCK PROMPT](docs/screenshots/dlp-block-prompt-policy.png)
 
 ## What the notification emails look like
 
@@ -149,6 +160,54 @@ is still derived automatically, you never edit it.
 > (e.g. `https://dlp-notify.example.com`) and that overrides the auto-derived
 > one. The shared secret (`?token=`) protects the endpoint either way.
 
+## Connect DLP, Logpush, and notifications
+
+The end-to-end connection is:
+
+```text
+Gateway HTTP DLP match
+  -> gateway_http Logpush job
+  -> POST to Worker URL with ?token=<shared_secret>
+  -> Worker keeps rows where DLPProfiles is non-empty
+  -> notify_mode sends the digest by log, SMTP, or Cloudflare Email Sending
+```
+
+With `manage_logpush = true` (the default), Terraform creates the
+`gateway_http` Logpush job and points it at the Worker automatically. The Worker
+URL is derived from the account's `workers.dev` subdomain, so you do not copy a
+URL between the dashboard and Terraform. Set `worker_endpoint` only when using a
+specific custom endpoint or managing the Logpush destination yourself.
+
+Choose the notification transport in `terraform.tfvars`:
+
+```hcl
+notify_mode = "smtp"
+
+notification_recipients = ["soc@yourdomain.com"]
+from_address            = "dlp-alerts@yourdomain.com"
+
+smtp_host = "smtp.yourdomain.com"
+smtp_port = 587
+smtp_tls  = "starttls"
+smtp_user = "dlp-notifier@yourdomain.com"
+smtp_pass = "REPLACE"
+```
+
+The same Worker can receive the optional AI Gateway Logpush stream when
+`enable_ai_gateway = true`; AI Gateway DLP blocks are identified by status code
+`424`.
+
+### Logpush configuration evidence
+
+The dashboard configuration below shows the two Logpush jobs and their active
+destinations:
+
+![Gateway HTTP Logpush configuration](docs/screenshots/logpush-gateway-http-config.png)
+
+![AI Gateway Logpush configuration](docs/screenshots/logpush-ai-gateway-config.png)
+
+![Logpush jobs and health](docs/screenshots/logpush-jobs-status.png)
+
 ## Change who gets notified
 
 ```hcl
@@ -166,6 +225,51 @@ terraform apply
 Recipients are also enforced at the binding level
 (`allowed_destination_addresses`), so the Worker can only email the configured
 list.
+
+## Customize the email text and appearance
+
+There are two levels of customization:
+
+### Change labels without editing code
+
+Edit these values in `terraform/terraform.tfvars`:
+
+```hcl
+from_name     = "Acme Security Operations"
+account_label = "Acme Production"
+```
+
+- `from_name` changes the sender display name.
+- `account_label` adds a short environment/customer label to the subject and
+  heading. Leave it empty to omit the label.
+
+Run `terraform apply` after changing either value.
+
+### Change the subject, wording, columns, or HTML styling
+
+Edit [`src/index.js`](src/index.js):
+
+| Email | Function | What to edit |
+|---|---|---|
+| Gateway HTTP DLP | `buildDigest()` | `subject`, section titles, HTML heading/intro/footer, table columns, and plain-text fallback |
+| AI Gateway DLP | `buildAiGatewayDigest()` | `subject`, HTML heading/intro/footer, table columns, and plain-text fallback |
+
+The email has both an **HTML** version and a **plain-text** version. Keep their
+wording and fields aligned so recipients get the same information regardless of
+mail-client capabilities. Dynamic Logpush values inserted into HTML must continue
+to use `esc(...)`; do not place raw event fields directly into HTML.
+
+After editing the template, rebuild and deploy it through Terraform:
+
+```bash
+npm run build
+cd terraform
+terraform apply
+```
+
+Then repeat the test in [`docs/testing.md`](docs/testing.md) and confirm both the
+subject and message body in a real mailbox. Do not edit `src/smtp.js` to change
+message wording; that file only constructs and transports the MIME message.
 
 ## Test without waiting for real traffic
 

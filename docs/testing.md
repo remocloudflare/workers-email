@@ -150,6 +150,38 @@ message like:
 
 ---
 
+## Customize the notification email
+
+For simple branding, edit `terraform/terraform.tfvars`:
+
+```hcl
+from_name     = "Acme Security Operations"
+account_label = "Acme Production"
+```
+
+For the subject, body wording, table columns, section headings, or colors, edit
+[`../src/index.js`](../src/index.js):
+
+- `buildDigest()` controls the Gateway HTTP DLP email.
+- `buildAiGatewayDigest()` controls the optional AI Gateway DLP email.
+
+Update both the HTML and plain-text versions. Keep `esc(...)` around dynamic
+values written into HTML. `src/smtp.js` is the transport/MIME layer and is not
+where notification wording should be changed.
+
+After any customization:
+
+```bash
+npm run build
+cd terraform
+terraform apply
+```
+
+Repeat Steps 2–4 and verify the customized subject and body in the destination
+mailbox.
+
+---
+
 ## Optional: AI Gateway DLP notifications
 
 If you use **Cloudflare AI Gateway** with DLP, the notifier can also alert you
